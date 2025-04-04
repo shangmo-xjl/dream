@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小雅宝记事本</title>
+    <link href="./http_cdn.bootcdn.net_ajax_libs_bootstrap_5.1.3_css_bootstrap.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="./http_cdn.bootcdn.net_ajax_libs_angular.js_1.8.2_angular.js"></script>
+    <script src="./http_cdn.bootcdn.net_ajax_libs_jquery_3.6.0_jquery.js"></script>
+    <script src="./bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</head>
+<body ng-app="notebookApp" ng-controller="NotebookController">
+    <div class="notebook-container">
+        <div class="content">
+            <!-- 艺术字标题 -->
+            <h1 class="art-title">给小雅宝的记事本</h1>
+
+            <!-- 当前时间显示 -->
+            <div class="time-display" id="currentTime">{{ currentTime }}</div>
+
+            <!-- 记录列表容器 -->
+            <div class="records-container">
+                <div class="records-scroll" ng-class="{'show-scroll': showAllRecords}">
+                    <!-- 记录列表 -->
+                    <div id="recordList">
+                        <div class="record-item"
+                             ng-repeat="record in records"
+                             ng-class="{'hidden-item': $index >= 5 && !showAllRecords}"
+                             ng-mousedown="startSlide($event, $index)"
+                             ng-mousemove="slide($event, $index)"
+                             ng-mouseup="endSlide($event, $index)"
+                             ng-mouseleave="endSlide($event, $index)">
+                            <div class="record-date">{{ record.date }}</div>
+                            <div class="record-content">
+                                <div class="event-input">
+                                    <input type="text"
+                                           class="form-control"
+                                           ng-model="record.event"
+                                           placeholder="{{ record.showPlaceholderEvent ? '事件内容' : '' }}"
+                                           ng-focus="record.showPlaceholderEvent = false"
+                                           ng-blur="record.showPlaceholderEvent = !record.event">
+                                </div>
+                                <div class="amount-input">
+                                    <input type="number"
+                                           class="form-control"
+                                           ng-model="record.amount"
+                                           placeholder="{{ record.showPlaceholderAmount ? '花费金额' : '' }}"
+                                           ng-focus="record.showPlaceholderAmount = false"
+                                           ng-blur="record.showPlaceholderAmount = !record.amount"
+                                           min="0"
+                                           step="0.1"
+                                           ng-change="calculateTotal()">
+                                </div>
+                            </div>
+                            <button class="delete-btn" ng-click="deleteRecord($index)">
+                                <b>×</b>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 查看更多按钮 -->
+                    <button class="btn-more" id="showMore" ng-show="records.length > 5 && !showAllRecords" ng-click="toggleShowMore()">点击查看更多</button>
+                </div>
+            </div>
+
+            <!-- 总计统计 -->
+            <div class="total-box">
+                <div class="total-title">事件消费总金额</div>
+                <div class="total-amount">金额: ¥{{ totalAmount }}</div>
+            </div>
+
+            <!-- 添加按钮 -->
+            <button class="add-btn" id="addBtn" ng-click="addRecord()" ></button>
+
+            <!-- 保存按钮 -->
+            <button class="save-btn" id="saveBtn" ng-click="saveRecords()"></button>
+
+            <!-- 历史记录按钮 -->
+            <button class="history-btn" id="historyBtn" ng-click="viewHistory()"></button>
+        </div>
+
+        <!-- 历史记录容器 -->
+        <div class="history-container" id="historyContainer">
+            <h1 class="art-title">历史记录</h1>
+            <!-- 回退按钮 -->
+            <button class="back-btn" id="backBtn" ng-click="backToMain()"></button>
+            <!-- Monthly Summary Section -->
+            <div class="summary-section">
+                <h5>年度月份总计</h5>
+                <div>
+                    <label for="yearSelect">选择年份:</label>
+                    <select id="yearSelect" onchange="calculateAndDisplayMonthlyTotals()" class="form-select form-select-sm" style="display: inline-block; width: auto;"></select>
+                </div>
+                <div id="monthlyTotalsContainer" style="margin-top: 15px;">
+                    <ul id="monthlyTotalsList"></ul>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="filter-controls">
+                <div class="flex-grow-1">
+                    <label for="searchInput" class="form-label">搜索事件内容:</label>
+                    <input type="text" id="searchInput" class="form-control" onkeyup="filterAndDisplayHistory()" placeholder="输入关键字...">
+                </div>
+                <div>
+                    <label for="startDate" class="form-label">开始日期:</label>
+                    <input type="date" id="startDate" onchange="filterAndDisplayHistory()" class="form-control">
+                </div>
+                <div>
+                    <label for="endDate" class="form-label">结束日期:</label>
+                    <input type="date" id="endDate" onchange="filterAndDisplayHistory()" class="form-control">
+                </div>
+            </div>
+            <!-- Accordion Container -->
+            <div class="accordion" id="recordListContainer">
+                <!-- Records will be loaded here by JavaScript -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>

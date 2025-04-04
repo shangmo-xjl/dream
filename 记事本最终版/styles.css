@@ -1,0 +1,395 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #f8f9fa;
+    font-family: 'Microsoft YaHei', sans-serif;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.notebook-container {
+    width: 100%;
+    height: 100vh;
+    border: 3px solid #2ecc71;
+    background: white;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.content {
+    position: relative;
+    z-index: 1;
+    padding: 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 添加历史记录容器样式 */
+.history-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    z-index: 100;
+    display: none;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.history-container.active {
+    display: block;
+}
+
+/* 添加回退按钮样式 */
+.back-btn {
+    position: fixed;
+    bottom: 50px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+    z-index: 101;
+    transition: all 0.3s ease;
+    pointer-events: auto;
+}
+
+.back-btn.active {
+    display: flex !important;
+}
+
+.back-btn:hover {
+    background-color: #f57c00;
+    transform: scale(1.1);
+}
+
+.back-btn:after {
+    content: '↩';
+    display: block;
+    color: white;
+    line-height: 0;
+    font-size: 40px;
+}
+
+.art-title {
+    background: linear-gradient(90deg, #ff6b6b, #7b68ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+    font-family: 'STXingkai', 'STHupo', cursive;
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: bold;
+    text-shadow: 0px 1px 2px rgba(150, 150, 150, 0.2);
+}
+
+.time-display {
+    text-align: center;
+    margin-bottom: 25px;
+    font-weight: bold;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.records-container {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    padding-top: 10px;
+}
+
+.records-scroll {
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 10px;
+    padding-top: 15px;
+}
+
+.record-date {
+    position: absolute;
+    top: -25px;
+    left: 10px;
+    font-size: 0.8rem;
+    color: #666;
+    z-index: 1;
+    background-color: white;
+    padding: 2px 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.record-item {
+    background: linear-gradient(90deg, #e0f7fa, #bbdefb);
+    border-radius: 20px;
+    padding: 15px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-top: 15px;
+    transform: translateX(0);
+    transition: transform 0.3s ease;
+    cursor: grab;
+}
+
+.record-item.sliding {
+    cursor: grabbing;
+}
+
+.record-item.slide-left {
+    transform: translateX(-60px);
+}
+
+.delete-btn {
+    position: absolute;
+    right: -70px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0;
+}
+
+.record-item.slide-left .delete-btn {
+    opacity: 1;
+}
+
+.delete-btn:hover {
+    background-color: #ff1111;
+}
+
+.delete-btn b {
+    font-size: 35px;
+}
+
+.record-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.event-input {
+    flex: 1;
+    margin-right: 20px;
+}
+
+.amount-input {
+    width: 150px;
+}
+
+.form-control {
+    border-radius: 10px;
+    border: 1px solid #ddd;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+    border-color: #2196F3;
+}
+
+.records-scroll.show-scroll {
+    padding-bottom: 60px;
+}
+
+.total-box {
+    background-color: #e3f2fd;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.total-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.total-amount {
+    color: #2196F3;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.add-btn {
+    position: fixed;
+    bottom: 50px;
+    right: 30px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #3cef0b;
+    color: white;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    box-shadow: 0 4px 8px rgba(255,0,0,0.3);
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.add-btn:after {
+    content: '+';
+    display: block;
+    color: white;
+    line-height: 0;
+}
+
+.btn-more {
+    width: 100%;
+    text-align: center;
+    margin: 10px 0;
+    padding: 8px;
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-more:hover {
+    background-color: #f0f0f0;
+}
+
+.hidden-item {
+    display: none;
+}
+
+/* 自定义滚动条样式 */
+.records-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.records-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.records-scroll::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.records-scroll::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.history-btn {
+    position: fixed;
+    bottom: 50px;
+    right: 130px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #ffeb3b;
+    color: white;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.history-btn:after {
+    content: '📚';
+    display: block;
+    color: white;
+    line-height: 0;
+}
+
+.save-btn {
+    position: fixed;
+    bottom: 50px;
+    right: 230px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.save-btn:after {
+    content: '💾';
+    display: block;
+    color: white;
+    line-height: 0;
+}
+
+h1 { color: #343a40; margin-bottom: 20px; text-align: center; }
+.summary-section, .filter-controls { margin-bottom: 25px; padding: 20px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.summary-section h5 { margin-bottom: 15px; color: #495057; }
+.summary-section label { margin-right: 10px; }
+#monthlyTotalsList { display: flex; flex-direction: column; list-style: none; padding-left: 0; columns: 2; -webkit-columns: 2; -moz-columns: 2; column-gap: 20px; font-size: 0.9rem; }
+#monthlyTotalsList li { margin-bottom: 8px; padding: 5px; background-color: #e9ecef; border-radius: 4px; }
+#monthlyTotalsList li span { float: right; font-weight: bold; color: #dc3545; }
+.filter-controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+.filter-controls label { margin-bottom: 5px; font-weight: 500; color: #495057; font-size: 0.9rem; }
+.filter-controls input[type="text"], .filter-controls input[type="date"], .filter-controls select { height: calc(1.5em + .75rem + 2px); padding: .375rem .75rem; font-size: .9rem; border-radius: .25rem; border: 1px solid #ced4da; }
+.filter-controls button { padding: .4rem .8rem; font-size: .9rem; }
+.accordion-item { background-color: #fff; border: 1px solid rgba(0,0,0,.125); border-radius: .3rem; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.accordion-header { margin-bottom: 0; }
+.accordion-button { font-weight: 600; background-color: #f8f9fa; color: #343a40; text-decoration: none; display: block; width: 100%; text-align: left; padding: 0.8rem 1.25rem; border: 0; border-radius: calc(.3rem - 1px) calc(.3rem - 1px) 0 0; }
+.accordion-button:not(.collapsed) { color: #0d6efd; background-color: #e7f1ff; box-shadow: inset 0 -1px 0 rgba(0,0,0,.125); }
+.accordion-button:focus { z-index: 3; border-color: #86b7fe; outline: 0; box-shadow: 0 0 0 .25rem rgba(13,110,253,.25); }
+.accordion-body { padding: 0; max-height: 400px; overflow-y: auto; }
+.record-item { padding: 12px 1.25rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; background-color: #fff; }
+.record-item:last-child { border-bottom: none; border-radius: 0 0 calc(.3rem - 1px) calc(.3rem - 1px); }
+.record-details { flex-grow: 1; margin-right: 15px; }
+.record-details div { margin-bottom: 3px; font-size: 0.9rem; color: #495057; }
+.record-details .time { font-size: 0.8rem; color: #6c757d; }
+.record-details .event { font-weight: 500; color: #212529; }
+.amount { color: #dc3545; font-weight: bold; white-space: nowrap; font-size: 0.95rem; }
+.btn-delete-record { padding: .25rem .5rem; font-size: .75rem; line-height: 1.2; }
+.no-results { text-align: center; color: #6c757d; margin-top: 20px; padding: 30px 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
