@@ -507,25 +507,25 @@
             var db;
             var dbName = "expenseDB";
             var dbVersion = 1;
-            
+
             // 打开数据库连接
             var request = indexedDB.open(dbName, dbVersion);
-            
+
             request.onerror = function(event) {
                 console.error("数据库错误: " + event.target.error);
                 alert("数据库访问失败，请确保您的浏览器支持 IndexedDB");
             };
-            
+
             request.onsuccess = function(event) {
                 db = event.target.result;
                 console.log("数据库连接成功");
                 // 加载最近的记录
                 loadTodayRecords();
             };
-            
+
             request.onupgradeneeded = function(event) {
                 var db = event.target.result;
-                
+
                 // 创建记录存储对象
                 if (!db.objectStoreNames.contains('records')) {
                     var objectStore = db.createObjectStore('records', { keyPath: 'id', autoIncrement: true });
@@ -556,7 +556,7 @@
                         event: record.event,
                         amount: record.amount
                     };
-                    
+
                     objectStore.add(recordToSave);
                 });
 
@@ -739,7 +739,7 @@
                     var recordItemDiv = document.createElement('div');
                     recordItemDiv.className = 'record-item';
                     recordItemDiv.id = 'record-' + record.id;
-                    recordItemDiv.innerHTML = 
+                    recordItemDiv.innerHTML =
                         '<div class="record-details">' +
                             '<div class="time">' + recordTime + '</div>' +
                             '<div class="event">' + recordEvent + '</div>' +
