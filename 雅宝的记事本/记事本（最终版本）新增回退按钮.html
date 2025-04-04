@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小雅宝记事本</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcdn.net/ajax/libs/angular.js/1.8.2/angular.min.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f8f9fa;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .notebook-container {
+            width: 100%;
+            height: 100vh;
+            border: 3px solid #2ecc71;
+            background: white;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+            padding: 20px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 添加历史记录容器样式 */
+        .history-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 100;
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .history-container.active {
+            display: block;
+        }
+
+        /* 添加回退按钮样式 */
+        .back-btn {
+            position: fixed;
+            bottom: 50px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 101;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .back-btn.active {
+            display: flex !important;
+        }
+
+        .back-btn:hover {
+            background-color: #f57c00;
+            transform: scale(1.1);
+        }
+
+        .back-btn:after {
+            content: '↩';
+            display: block;
+            color: white;
+            line-height: 0;
+            font-size: 40px;
+        }
+
+        .art-title {
+            background: linear-gradient(90deg, #ff6b6b, #7b68ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            font-family: 'STXingkai', 'STHupo', cursive;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-shadow: 0px 1px 2px rgba(150, 150, 150, 0.2);
+        }
+
+        .time-display {
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: bold;
+            color: #333;
+            font-size: 1.5rem;
+        }
+
+        .records-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            padding-top: 10px;
+        }
+
+        .records-scroll {
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 10px;
+            padding-top: 15px;
+        }
+
+        .record-date {
+            position: absolute;
+            top: -25px;
+            left: 10px;
+            font-size: 0.8rem;
+            color: #666;
+            z-index: 1;
+            background-color: white;
+            padding: 2px 5px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .record-item {
+            background: linear-gradient(90deg, #e0f7fa, #bbdefb);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-top: 15px;
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+            cursor: grab;
+        }
+
+        .record-item.sliding {
+            cursor: grabbing;
+        }
+
+        .record-item.slide-left {
+            transform: translateX(-60px);
+        }
+
+        .delete-btn {
+            position: absolute;
+            right: -70px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .record-item.slide-left .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            background-color: #ff1111;
+        }
+
+        .delete-btn b {
+            font-size: 35px;
+        }
+
+        .record-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .event-input {
+            flex: 1;
+            margin-right: 20px;
+        }
+
+        .amount-input {
+            width: 150px;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+            border-color: #2196F3;
+        }
+
+        .records-scroll.show-scroll {
+            padding-bottom: 60px;
+        }
+
+        .total-box {
+            background-color: #e3f2fd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .total-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .total-amount {
+            color: #2196F3;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .add-btn {
+            position: fixed;
+            bottom: 50px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #3cef0b;
+            color: white;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            box-shadow: 0 4px 8px rgba(255,0,0,0.3);
+            cursor: pointer;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:after {
+            content: '+';
+            display: block;
+            color: white;
+            line-height: 0;
+        }
+
+        .btn-more {
+            width: 100%;
+            text-align: center;
+            margin: 10px 0;
+            padding: 8px;
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-more:hover {
+            background-color: #f0f0f0;
+        }
+
+        .hidden-item {
+            display: none;
+        }
+
+        /* 自定义滚动条样式 */
+        .records-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .records-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .records-scroll::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .records-scroll::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .history-btn {
+            position: fixed;
+            bottom: 50px;
+            right: 130px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #ffeb3b;
+            color: white;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .history-btn:after {
+            content: '📚';
+            display: block;
+            color: white;
+            line-height: 0;
+        }
+
+        .save-btn {
+            position: fixed;
+            bottom: 50px;
+            right: 230px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .save-btn:after {
+            content: '💾';
+            display: block;
+            color: white;
+            line-height: 0;
+        }
+
+        h1 { color: #343a40; margin-bottom: 20px; text-align: center; }
+        .summary-section, .filter-controls { margin-bottom: 25px; padding: 20px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .summary-section h5 { margin-bottom: 15px; color: #495057; }
+        .summary-section label { margin-right: 10px; }
+        #monthlyTotalsList { display: flex; flex-direction: column; list-style: none; padding-left: 0; columns: 2; -webkit-columns: 2; -moz-columns: 2; column-gap: 20px; font-size: 0.9rem; }
+        #monthlyTotalsList li { margin-bottom: 8px; padding: 5px; background-color: #e9ecef; border-radius: 4px; }
+        #monthlyTotalsList li span { float: right; font-weight: bold; color: #dc3545; }
+        .filter-controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+        .filter-controls label { margin-bottom: 5px; font-weight: 500; color: #495057; font-size: 0.9rem; }
+        .filter-controls input[type="text"], .filter-controls input[type="date"], .filter-controls select { height: calc(1.5em + .75rem + 2px); padding: .375rem .75rem; font-size: .9rem; border-radius: .25rem; border: 1px solid #ced4da; }
+        .filter-controls button { padding: .4rem .8rem; font-size: .9rem; }
+        .accordion-item { background-color: #fff; border: 1px solid rgba(0,0,0,.125); border-radius: .3rem; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .accordion-header { margin-bottom: 0; }
+        .accordion-button { font-weight: 600; background-color: #f8f9fa; color: #343a40; text-decoration: none; display: block; width: 100%; text-align: left; padding: 0.8rem 1.25rem; border: 0; border-radius: calc(.3rem - 1px) calc(.3rem - 1px) 0 0; }
+        .accordion-button:not(.collapsed) { color: #0d6efd; background-color: #e7f1ff; box-shadow: inset 0 -1px 0 rgba(0,0,0,.125); }
+        .accordion-button:focus { z-index: 3; border-color: #86b7fe; outline: 0; box-shadow: 0 0 0 .25rem rgba(13,110,253,.25); }
+        .accordion-body { padding: 0; max-height: 400px; overflow-y: auto; }
+        .record-item { padding: 12px 1.25rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; background-color: #fff; }
+        .record-item:last-child { border-bottom: none; border-radius: 0 0 calc(.3rem - 1px) calc(.3rem - 1px); }
+        .record-details { flex-grow: 1; margin-right: 15px; }
+        .record-details div { margin-bottom: 3px; font-size: 0.9rem; color: #495057; }
+        .record-details .time { font-size: 0.8rem; color: #6c757d; }
+        .record-details .event { font-weight: 500; color: #212529; }
+        .amount { color: #dc3545; font-weight: bold; white-space: nowrap; font-size: 0.95rem; }
+        .btn-delete-record { padding: .25rem .5rem; font-size: .75rem; line-height: 1.2; }
+        .no-results { text-align: center; color: #6c757d; margin-top: 20px; padding: 30px 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body ng-app="notebookApp" ng-controller="NotebookController">
+    <div class="notebook-container">
+        <div class="content">
+            <!-- 艺术字标题 -->
+            <h1 class="art-title">给小雅宝的记事本</h1>
+
+            <!-- 当前时间显示 -->
+            <div class="time-display" id="currentTime">{{ currentTime }}</div>
+
+            <!-- 记录列表容器 -->
+            <div class="records-container">
+                <div class="records-scroll" ng-class="{'show-scroll': showAllRecords}">
+                    <!-- 记录列表 -->
+                    <div id="recordList">
+                        <div class="record-item"
+                             ng-repeat="record in records"
+                             ng-class="{'hidden-item': $index >= 5 && !showAllRecords}"
+                             ng-mousedown="startSlide($event, $index)"
+                             ng-mousemove="slide($event, $index)"
+                             ng-mouseup="endSlide($event, $index)"
+                             ng-mouseleave="endSlide($event, $index)">
+                            <div class="record-date">{{ record.date }}</div>
+                            <div class="record-content">
+                                <div class="event-input">
+                                    <input type="text"
+                                           class="form-control"
+                                           ng-model="record.event"
+                                           placeholder="{{ record.showPlaceholderEvent ? '事件内容' : '' }}"
+                                           ng-focus="record.showPlaceholderEvent = false"
+                                           ng-blur="record.showPlaceholderEvent = !record.event">
+                                </div>
+                                <div class="amount-input">
+                                    <input type="number"
+                                           class="form-control"
+                                           ng-model="record.amount"
+                                           placeholder="{{ record.showPlaceholderAmount ? '花费金额' : '' }}"
+                                           ng-focus="record.showPlaceholderAmount = false"
+                                           ng-blur="record.showPlaceholderAmount = !record.amount"
+                                           min="0"
+                                           step="0.1"
+                                           ng-change="calculateTotal()">
+                                </div>
+                            </div>
+                            <button class="delete-btn" ng-click="deleteRecord($index)">
+                                <b>×</b>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 查看更多按钮 -->
+                    <button class="btn-more" id="showMore" ng-show="records.length > 5 && !showAllRecords" ng-click="toggleShowMore()">点击查看更多</button>
+                </div>
+            </div>
+
+            <!-- 总计统计 -->
+            <div class="total-box">
+                <div class="total-title">事件消费总金额</div>
+                <div class="total-amount">金额: ¥{{ totalAmount }}</div>
+            </div>
+
+            <!-- 添加按钮 -->
+            <button class="add-btn" id="addBtn" ng-click="addRecord()" ></button>
+
+            <!-- 保存按钮 -->
+            <button class="save-btn" id="saveBtn" ng-click="saveRecords()"></button>
+
+            <!-- 历史记录按钮 -->
+            <button class="history-btn" id="historyBtn" ng-click="viewHistory()"></button>
+        </div>
+
+        <!-- 历史记录容器 -->
+        <div class="history-container" id="historyContainer">
+            <h1 class="art-title">历史记录</h1>
+            <!-- 回退按钮 -->
+            <button class="back-btn" id="backBtn" ng-click="backToMain()"></button>
+            <!-- Monthly Summary Section -->
+            <div class="summary-section">
+                <h5>年度月份总计</h5>
+                <div>
+                    <label for="yearSelect">选择年份:</label>
+                    <select id="yearSelect" onchange="calculateAndDisplayMonthlyTotals()" class="form-select form-select-sm" style="display: inline-block; width: auto;"></select>
+                </div>
+                <div id="monthlyTotalsContainer" style="margin-top: 15px;">
+                    <ul id="monthlyTotalsList"></ul>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="filter-controls">
+                <div class="flex-grow-1">
+                    <label for="searchInput" class="form-label">搜索事件内容:</label>
+                    <input type="text" id="searchInput" class="form-control" onkeyup="filterAndDisplayHistory()" placeholder="输入关键字...">
+                </div>
+                <div>
+                    <label for="startDate" class="form-label">开始日期:</label>
+                    <input type="date" id="startDate" onchange="filterAndDisplayHistory()" class="form-control">
+                </div>
+                <div>
+                    <label for="endDate" class="form-label">结束日期:</label>
+                    <input type="date" id="endDate" onchange="filterAndDisplayHistory()" class="form-control">
+                </div>
+            </div>
+            <!-- Accordion Container -->
+            <div class="accordion" id="recordListContainer">
+                <!-- Records will be loaded here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Angular应用
+        var app = angular.module('notebookApp', []);
+
+        app.controller('NotebookController', function($scope, $interval) {
+            // 初始化数据
+            $scope.records = [];
+            $scope.totalAmount = '0.00';
+            $scope.showAllRecords = false;
+
+            // 滑动相关变量
+            var startX = 0;
+            var currentX = 0;
+            var sliding = false;
+            var slideThreshold = 50; // 触发滑动的阈值
+
+            // 更新时间
+            function updateTime() {
+                var now = new Date();
+                var options = {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                };
+                $scope.currentTime = now.toLocaleDateString('zh-CN', options);
+            }
+
+            // 每秒更新时间
+            updateTime();
+            $interval(updateTime, 1000);
+
+            // 添加记录
+            $scope.addRecord = function() {
+                var now = new Date();
+                var dateStr = now.getFullYear() + '/' +
+                             ('0' + (now.getMonth() + 1)).slice(-2) + '/' +
+                             ('0' + now.getDate()).slice(-2) + ' ' +
+                             ('0' + now.getHours()).slice(-2) + ':' +
+                             ('0' + now.getMinutes()).slice(-2) + ':' +
+                             ('0' + now.getSeconds()).slice(-2);
+
+                $scope.records.unshift({
+                    date: dateStr,
+                    event: '',
+                    amount: '',
+                    showPlaceholderEvent: true,
+                    showPlaceholderAmount: true
+                });
+            };
+
+            // 切换显示更多
+            $scope.toggleShowMore = function() {
+                $scope.showAllRecords = true;
+            };
+
+            // 计算总金额
+            $scope.calculateTotal = function() {
+                var total = 0;
+                for (var i = 0; i < $scope.records.length; i++) {
+                    var amount = parseFloat($scope.records[i].amount) || 0;
+                    total += amount;
+                }
+                $scope.totalAmount = total.toFixed(2);
+            };
+
+            // 添加第一条记录
+            $scope.addRecord();
+
+            // 开始滑动
+            $scope.startSlide = function(event, index) {
+                startX = event.clientX;
+                sliding = true;
+                angular.element(event.currentTarget).addClass('sliding');
+            };
+
+            // 滑动中
+            $scope.slide = function(event, index) {
+                if (!sliding) return;
+
+                currentX = event.clientX;
+                var diff = currentX - startX;
+
+                if (diff < 0) { // 向左滑动
+                    if (Math.abs(diff) > slideThreshold) {
+                        angular.element(event.currentTarget).addClass('slide-left');
+                    }
+                }
+                if (diff > 0) { // 向右滑动
+                    if (Math.abs(diff) > slideThreshold) {
+                        angular.element(event.currentTarget).removeClass('slide-left');
+                    }
+                }
+            };
+
+            // 结束滑动
+            $scope.endSlide = function(event, index) {
+                sliding = false;
+                angular.element(event.currentTarget).removeClass('sliding');
+            };
+
+            // 删除记录
+            $scope.deleteRecord = function(index) {
+                $scope.records.splice(index, 1);
+                $scope.calculateTotal();
+            };
+
+            // 初始化数据库
+            var db;
+            var dbName = "expenseDB";
+            var dbVersion = 1;
+
+            // 打开数据库连接
+            var request = indexedDB.open(dbName, dbVersion);
+
+            request.onerror = function(event) {
+                console.error("数据库错误: " + event.target.error);
+                alert("数据库访问失败，请确保您的浏览器支持 IndexedDB");
+            };
+
+            request.onsuccess = function(event) {
+                db = event.target.result;
+                console.log("数据库连接成功");
+                // 加载最近的记录
+                loadTodayRecords();
+            };
+
+            request.onupgradeneeded = function(event) {
+                var db = event.target.result;
+
+                // 创建记录存储对象
+                if (!db.objectStoreNames.contains('records')) {
+                    var objectStore = db.createObjectStore('records', { keyPath: 'id', autoIncrement: true });
+                    // 创建索引
+                    objectStore.createIndex('date', 'date', { unique: false });
+                    objectStore.createIndex('dateStr', 'dateStr', { unique: false });
+                }
+            };
+
+            $scope.saveRecords = function() {
+                if (!db) {
+                    alert("数据库未就绪，请稍后重试");
+                    return;
+                }
+
+                // 新增：校验事件内容和花费金额是否为空
+                var hasEmptyFields = $scope.records.some(function(record) {
+                    return !record.event || !record.amount;
+                });
+
+                if (hasEmptyFields) {
+                    alert("事件内容和花费金额不能为空，请检查后重新保存！");
+                    return; // 终止保存操作
+                }
+
+                var now = new Date();
+                var dateStr = now.getFullYear() + '-' +
+                         ('0' + (now.getMonth() + 1)).slice(-2) + '-' +
+                         ('0' + now.getDate()).slice(-2);
+
+                var transaction = db.transaction(['records'], 'readwrite');
+                var objectStore = transaction.objectStore('records');
+
+                $scope.records.forEach(function(record) {
+                    var recordToSave = {
+                        date: new Date(record.date),
+                        dateStr: dateStr,
+                        event: record.event,
+                        amount: record.amount
+                    };
+
+                    objectStore.add(recordToSave);
+                });
+
+                transaction.oncomplete = function() {
+                    alert('记录已成功保存！');
+                    window.location.reload(); // 页面重新加载
+                };
+
+                transaction.onerror = function(event) {
+                    alert('保存失败：' + event.target.error);
+                };
+            };
+
+            // 查看历史记录
+            $scope.viewHistory = function() {
+                if (!db) {
+                    alert("数据库未就绪，请稍后重试");
+                    return;
+                }
+
+                var transaction = db.transaction(['records'], 'readonly');
+                var objectStore = transaction.objectStore('records');
+                var request = objectStore.getAll();
+
+                request.onerror = function(event) {
+                    alert('获取历史记录失败: ' + event.target.error);
+                };
+
+                request.onsuccess = function(event) {
+                    var allRecords = event.target.result;
+                    window.allDbRecords = allRecords;
+
+                    // 显示历史记录容器和回退按钮
+                    var historyContainer = document.getElementById('historyContainer');
+                    var backBtn = document.getElementById('backBtn');
+
+                    historyContainer.classList.add('active');
+                    backBtn.classList.add('active');
+
+                    // 强制更新按钮样式
+                    backBtn.style.display = 'flex';
+                    backBtn.style.visibility = 'visible';
+                    backBtn.style.opacity = '1';
+
+                    // 初始化年份选择器
+                    var yearSelect = document.getElementById('yearSelect');
+                    yearSelect.innerHTML = ''; // 清空现有选项
+                    var years = new Set();
+                    allRecords.forEach(function(record) {
+                        try {
+                            var recordDate = new Date(record.date);
+                            if (!isNaN(recordDate.getTime())) {
+                                years.add(recordDate.getFullYear());
+                            }
+                        } catch(e) {
+                            console.warn("Could not parse year for record:", record, e);
+                        }
+                    });
+
+                    var sortedYears = Array.from(years).sort((a, b) => b - a); // 降序排列
+                    if (sortedYears.length === 0) {
+                        var defaultOption = document.createElement('option');
+                        defaultOption.textContent = '无记录';
+                        defaultOption.disabled = true;
+                        yearSelect.appendChild(defaultOption);
+                    } else {
+                        sortedYears.forEach(function(year) {
+                            var option = document.createElement('option');
+                            option.value = year;
+                            option.textContent = year;
+                            yearSelect.appendChild(option);
+                        });
+                        // 初始计算最新年份的数据
+                        calculateAndDisplayMonthlyTotals();
+                    }
+
+                    // 显示记录
+                    filterAndDisplayHistory();
+
+                    // 设置默认结束日期为今天
+                    try {
+                        var today = new Date().toISOString().split('T')[0];
+                        document.getElementById('endDate').value = today;
+                    } catch (e) {
+                        console.error("Error setting default date: ", e);
+                    }
+                };
+            };
+
+            // 返回主页面
+            $scope.backToMain = function() {
+                document.getElementById('historyContainer').classList.remove('active');
+                document.getElementById('backBtn').classList.remove('active');
+            };
+
+            // 显示记录函数
+            function displayRecords(recordsToDisplay) {
+                var container = document.getElementById("recordListContainer");
+                container.innerHTML = ""; // 清空之前的结果
+                var groupedRecords = {};
+
+                recordsToDisplay.forEach(function(record) {
+                    var dateKey = record.dateStr || new Date(record.date).toISOString().split('T')[0];
+                    if (!groupedRecords[dateKey]) {
+                        groupedRecords[dateKey] = [];
+                    }
+                    groupedRecords[dateKey].push(record);
+                });
+
+                var sortedDates = Object.keys(groupedRecords).sort().reverse();
+
+                if (sortedDates.length === 0) {
+                    container.innerHTML = '<div class="no-results">没有找到匹配的记录。</div>';
+                    return;
+                }
+
+                sortedDates.forEach(function(date, index) {
+                    var dayTotal = groupedRecords[date].reduce(function(sum, record) {
+                        return sum + (parseFloat(record.amount) || 0);
+                    }, 0);
+
+                    var collapseId = 'collapse' + index;
+
+                    var accordionItem = document.createElement('div');
+                    accordionItem.className = 'accordion-item';
+
+                    var header = document.createElement('h2');
+                    header.className = 'accordion-header';
+                    header.id = 'heading' + index;
+
+                    var button = document.createElement('button');
+                    button.className = 'accordion-button collapsed';
+                    button.type = 'button';
+                    button.setAttribute('data-bs-toggle', 'collapse');
+                    button.setAttribute('data-bs-target', '#' + collapseId);
+                    button.setAttribute('aria-expanded', 'false');
+                    button.setAttribute('aria-controls', collapseId);
+                    button.textContent = date + ' (当日总计: ¥' + dayTotal.toFixed(2) + ')';
+
+                    header.appendChild(button);
+
+                    var collapseDiv = document.createElement('div');
+                    collapseDiv.id = collapseId;
+                    collapseDiv.className = 'accordion-collapse collapse';
+                    collapseDiv.setAttribute('aria-labelledby', 'heading' + index);
+                    collapseDiv.setAttribute('data-bs-parent', '#recordListContainer');
+
+                    var bodyDiv = document.createElement('div');
+                    bodyDiv.className = 'accordion-body';
+
+                    groupedRecords[date].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(function(record) {
+                        var recordTime = new Date(record.date).toLocaleTimeString('zh-CN', { hour: '2-digit', minute:'2-digit', second:'2-digit', hour12: false });
+                        var recordAmount = (parseFloat(record.amount) || 0).toFixed(2);
+                        var recordEvent = record.event || '(无内容)';
+
+                        var recordItemDiv = document.createElement('div');
+                        recordItemDiv.className = 'record-item';
+                        recordItemDiv.id = 'record-' + record.id;
+                        recordItemDiv.innerHTML =
+                            '<div class="record-details">' +
+                                '<div class="time">' + recordTime + '</div>' +
+                                '<div class="event">' + recordEvent + '</div>' +
+                            '</div>' +
+                            '<div class="amount">¥' + recordAmount + '</div>' +
+                            '<button class="btn btn-outline-danger btn-sm btn-delete-record">删除</button>';
+
+                        recordItemDiv.querySelector('.btn-delete-record').onclick = function() {
+                            deleteHistoryRecord(record.id);
+                        };
+
+                        bodyDiv.appendChild(recordItemDiv);
+                    });
+
+                    collapseDiv.appendChild(bodyDiv);
+                    accordionItem.appendChild(header);
+                    accordionItem.appendChild(collapseDiv);
+                    container.appendChild(accordionItem);
+                });
+            }
+
+            // 筛选并显示历史记录
+            window.filterAndDisplayHistory = function() {
+                if (!window.allDbRecords) {
+                    console.error('找不到记录数据。');
+                    return;
+                }
+                var searchTerm = document.getElementById("searchInput").value.toLowerCase();
+                var startDate = document.getElementById("startDate").value;
+                var endDate = document.getElementById("endDate").value;
+
+                var filteredRecords = window.allDbRecords.filter(function(record) {
+                    var recordDateStr = record.dateStr || new Date(record.date).toISOString().split('T')[0];
+                    var matchSearch = !searchTerm || (record.event && record.event.toLowerCase().includes(searchTerm));
+                    var matchStartDate = !startDate || recordDateStr >= startDate;
+                    var matchEndDate = !endDate || recordDateStr <= endDate;
+                    return matchSearch && matchStartDate && matchEndDate;
+                });
+                displayRecords(filteredRecords);
+            }
+
+            // 删除历史记录
+            window.deleteHistoryRecord = function(id) {
+                if (!confirm("确定要删除这条记录吗？")) return;
+
+                var request = indexedDB.open(dbName, dbVersion);
+                request.onerror = function(event) {
+                    alert("数据库访问失败: " + event.target.error);
+                };
+                request.onsuccess = function(event) {
+                    db = event.target.result;
+                    var transaction = db.transaction(["records"], "readwrite");
+                    var objectStore = transaction.objectStore("records");
+                    var deleteRequest = objectStore.delete(id);
+
+                    deleteRequest.onsuccess = function() {
+                        console.log("记录 " + id + " 已从数据库删除");
+                        if (window.allDbRecords) {
+                            window.allDbRecords = window.allDbRecords.filter(function(record) {
+                                return record.id !== id;
+                            });
+                            filterAndDisplayHistory();
+                            console.log("记录已在界面更新");
+                        } else {
+                            console.error("找不到本地记录数组来更新UI。");
+                        }
+                    };
+                    deleteRequest.onerror = function(event) {
+                        alert("删除数据库记录失败: " + event.target.error);
+                    };
+                };
+            }
+
+            // 计算并显示月度总计
+            window.calculateAndDisplayMonthlyTotals = function() {
+                var yearSelect = document.getElementById('yearSelect');
+                var selectedYear = parseInt(yearSelect.value);
+                var totalsList = document.getElementById('monthlyTotalsList');
+                totalsList.innerHTML = '';
+
+                if (isNaN(selectedYear) || !window.allDbRecords) {
+                    return;
+                }
+
+                var monthlyTotals = Array(12).fill(0);
+                var yearTotal = 0;
+
+                window.allDbRecords.forEach(function(record) {
+                    try {
+                        var recordDate = new Date(record.date);
+                        if (!isNaN(recordDate.getTime()) && recordDate.getFullYear() === selectedYear) {
+                            var monthIndex = recordDate.getMonth();
+                            var amount = parseFloat(record.amount) || 0;
+                            monthlyTotals[monthIndex] += amount;
+                            yearTotal += amount;
+                        }
+                    } catch (e) {
+                        console.warn("无法解析记录日期:", record, e);
+                    }
+                });
+
+                var yearTotalLi = document.createElement('li');
+                yearTotalLi.style.fontWeight = 'bold';
+                yearTotalLi.style.backgroundColor = '#cfe2ff';
+                yearTotalLi.textContent = '年度总计 (' + selectedYear + ')';
+                yearTotalLi.innerHTML += '<span>¥' + yearTotal.toFixed(2) + '</span>';
+                totalsList.appendChild(yearTotalLi);
+
+                monthlyTotals.forEach(function(total, index) {
+                    if (total > 0) {
+                        var month = index + 1;
+                        var li = document.createElement('li');
+                        li.textContent = month + '月';
+                        li.innerHTML += '<span>¥' + total.toFixed(2) + '</span>';
+                        totalsList.appendChild(li);
+                    }
+                });
+
+                if (totalsList.children.length <= 1) {
+                    var noDataLi = document.createElement('li');
+                    noDataLi.textContent = '该年份无消费记录';
+                    noDataLi.style.textAlign = 'center';
+                    noDataLi.style.color = '#6c757d';
+                    totalsList.appendChild(noDataLi);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
